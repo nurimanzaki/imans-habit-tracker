@@ -3,7 +3,7 @@ import {
   ChevronLeft, ChevronRight, Moon, Sun, Sunrise, Briefcase, Candy,
   Dumbbell, NotebookPen, CalendarDays, LayoutGrid, Settings as SettingsIcon,
   Check, X, Minus, TrendingUp, TrendingDown, Sparkles, RotateCcw, Loader2,
-  Mail, LogOut, AlertTriangle,
+  Mail, LogOut, AlertTriangle, BookOpen, CalendarOff,
 } from "lucide-react";
 import { supabase, isSupabaseConfigured } from "./lib/supabaseClient";
 import { ensureSettings, upsertSettings, fetchAllRecords, upsertRecord, upsertRecordsBulk } from "./lib/db";
@@ -20,6 +20,7 @@ const HABITS = [
   { key: "office", label: "Office arrival", icon: Briefcase, type: "time-target" },
   { key: "sugar", label: "Avoid sugar", icon: Candy, type: "tri" },
   { key: "exercise", label: "Exercise 30 min", icon: Dumbbell, type: "tri" },
+  { key: "reading", label: "Read 30 min", icon: BookOpen, type: "tri" },
 ];
 
 const DEFAULT_SETTINGS = {
@@ -132,6 +133,9 @@ function habitScore(key, record, settings) {
       return hrs >= settings.sleepMinHours && hrs <= settings.sleepMaxHours ? 100 : 0;
     }
     case "office": {
+      if (record.isOffDay) {
+        return record.beneficialActivities == null ? null : record.beneficialActivities ? 100 : 0;
+      }
       if (!record.officeArrival) return null;
       const target = toMinutes(settings.officeTarget);
       const actual = toMinutes(record.officeArrival);
@@ -143,6 +147,8 @@ function habitScore(key, record, settings) {
       return record.sugar == null ? null : record.sugar ? 100 : 0;
     case "exercise":
       return record.exercise == null ? null : record.exercise ? 100 : 0;
+    case "reading":
+      return record.reading == null ? null : record.reading ? 100 : 0;
     default:
       return null;
   }
@@ -156,22 +162,31 @@ function calculateDailyScore(record, settings) {
 }
 
 function officeStatus(record, settings) {
+  if (record?.isOffDay) {
+    if (record.beneficialActivities == null) return { state: "none", label: "Not recorded" };
+    return record.beneficialActivities
+      ? { state: "good", label: "Done" }
+      : { state: "bad", label: "Missed" };
+  }
   if (!record?.officeArrival) return { state: "none", label: "Not recorded" };
   const onTime = toMinutes(record.officeArrival) <= toMinutes(settings.officeTarget);
   return onTime
     ? { state: "good", label: "On time" }
     : { state: "bad", label: "Late" };
 }
+
 function sleepTimeStatus(record, settings) {
   if (!record?.sleepTime) return { state: "none", label: "Not recorded" };
   const onTime = eveningMinutes(record.sleepTime) <= eveningMinutes(settings.sleepTimeTarget);
   return onTime ? { state: "good", label: "On target" } : { state: "bad", label: "Later than target" };
 }
+
 function wakeTimeStatus(record, settings) {
   if (!record?.wakeTime) return { state: "none", label: "Not recorded" };
   const onTime = toMinutes(record.wakeTime) <= toMinutes(settings.wakeTimeTarget);
   return onTime ? { state: "good", label: "On target" } : { state: "bad", label: "Later than target" };
 }
+
 function sleepDurationStatus(record, settings) {
   const dur = sleepDurationMinutes(record?.sleepTime, record?.wakeTime);
   if (dur == null) return { state: "none", label: "—" };
@@ -206,7 +221,7 @@ function exportJSON(records, settings) {
 }
 
 function exportCSV(records) {
-  const cols = ["date", "sleepTime", "wakeTime", "sleepDurationMinutes", "subuh", "officeArrival", "sugar", "exercise", "notes"];
+  const cols = ["date", "sleepTime", "wakeTime", "sleepDurationMinutes", "subuh", "isOffDay", "officeArrival", "beneficialActivities", "sugar", "exercise", "reading", "notes"];
   const rows = Object.values(records)
     .sort((a, b) => (a.date < b.date ? -1 : 1))
     .map((r) => {
@@ -214,7 +229,20 @@ function exportCSV(records) {
       const val = (v) => (v == null ? "" : v);
       const bool = (v) => (v == null ? "" : v ? "done" : "missed");
       const notes = (r.notes || "").replace(/"/g, '""');
-      return [r.date, val(r.sleepTime), val(r.wakeTime), val(dur), bool(r.subuh), val(r.officeArrival), bool(r.sugar), bool(r.exercise), `"${notes}"`].join(",");
+      return [
+        r.date,
+        val(r.sleepTime),
+        val(r.wakeTime),
+        val(dur),
+        bool(r.subuh),
+        r.isOffDay ? "yes" : "no",
+        val(r.officeArrival),
+        bool(r.beneficialActivities),
+        bool(r.sugar),
+        bool(r.exercise),
+        bool(r.reading),
+        `"${notes}"`,
+      ].join(",");
     });
   const csv = [cols.join(","), ...rows].join("\n");
   downloadFile(csv, `habit-tracker-backup-${todayISO()}.csv`, "text/csv");
@@ -468,13 +496,38 @@ function DailyScreen({ settings, records, onSaveRecord }) {
 
         {/* WORK */}
         <section>
-          <SectionLabel>Work</SectionLabel>
-          <div className="flex items-center gap-3">
-            <TimeField label="Arrive office" value={draft.officeArrival} onChange={(v) => update({ officeArrival: v })} />
-            <div className="pt-6">
-              <StatusPill status={officeStatus(draft, settings)} />
-            </div>
+          <div className="flex items-center justify-between mb-3">
+            <SectionLabel>Work</SectionLabel>
+            <button
+              type="button"
+              onClick={() => update({ isOffDay: !draft.isOffDay })}
+              disabled={future}
+              className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full transition ${
+                draft.isOffDay ? "bg-stone-900 text-white" : "bg-stone-100 text-stone-500"
+              } ${future ? "opacity-50" : ""}`}
+            >
+              <CalendarOff size={13} /> Off day
+            </button>
           </div>
+          {draft.isOffDay ? (
+            <div className="flex items-center justify-between rounded-xl bg-stone-50 px-4 py-3">
+              <span className="text-[15px] text-stone-800 flex items-center gap-2">
+                <CalendarOff size={17} className="text-stone-400" /> 3 hours of beneficial activities
+              </span>
+              <TriToggle
+                value={draft.beneficialActivities ?? null}
+                onChange={(v) => update({ beneficialActivities: v })}
+                disabled={future}
+              />
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <TimeField label="Arrive office" value={draft.officeArrival} onChange={(v) => update({ officeArrival: v })} />
+              <div className="pt-6">
+                <StatusPill status={officeStatus(draft, settings)} />
+              </div>
+            </div>
+          )}
         </section>
 
         {/* HEALTH */}
@@ -492,6 +545,12 @@ function DailyScreen({ settings, records, onSaveRecord }) {
                 <Dumbbell size={17} className="text-stone-400" /> Exercise {settings.exerciseTargetMinutes} min
               </span>
               <TriToggle value={draft.exercise ?? null} onChange={(v) => update({ exercise: v })} disabled={future} />
+            </div>
+            <div className="flex items-center justify-between rounded-xl bg-stone-50 px-4 py-3">
+              <span className="text-[15px] text-stone-800 flex items-center gap-2">
+                <BookOpen size={17} className="text-stone-400" /> Read 30 min
+              </span>
+              <TriToggle value={draft.reading ?? null} onChange={(v) => update({ reading: v })} disabled={future} />
             </div>
           </div>
         </section>

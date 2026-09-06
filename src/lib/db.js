@@ -45,9 +45,12 @@ function rowToRecord(row) {
     sleepTime: toHHMM(row.sleep_time),
     wakeTime: toHHMM(row.wake_time),
     subuh: row.subuh,
+    isOffDay: row.is_off_day || false,
     officeArrival: toHHMM(row.office_arrival),
+    beneficialActivities: row.beneficial_activities,
     sugar: row.avoid_sugar,
     exercise: row.exercise_completed,
+    reading: row.reading,
     notes: row.notes || "",
   };
 }
@@ -59,9 +62,12 @@ function recordToRow(userId, dateISO, r) {
     sleep_time: r.sleepTime || null,
     wake_time: r.wakeTime || null,
     subuh: r.subuh ?? null,
+    is_off_day: r.isOffDay ?? false,
     office_arrival: r.officeArrival || null,
+    beneficial_activities: r.beneficialActivities ?? null,
     avoid_sugar: r.sugar ?? null,
     exercise_completed: r.exercise ?? null,
+    reading: r.reading ?? null,
     notes: r.notes || null,
     updated_at: new Date().toISOString(),
   };
