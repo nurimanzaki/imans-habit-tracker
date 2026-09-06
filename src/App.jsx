@@ -397,7 +397,7 @@ function DailyScreen({ settings, records, onSaveRecord }) {
   const score = calculateDailyScore(draft, settings);
 
   return (
-    <div className="pb-28">
+    <div className="pb-10">
       {/* Date header */}
       <div className="px-5 pt-6 pb-5 text-center">
         <div className="flex items-center justify-center gap-3">
@@ -709,7 +709,7 @@ function DashboardScreen({ settings, records }) {
   const hasAnyData = dayData.some((d) => d.record);
 
   return (
-    <div className="pb-28 px-5 pt-6">
+    <div className="pb-10 px-5 pt-6">
       <div className="flex items-center justify-between mb-5">
         <h1 className="text-xl font-semibold text-stone-900">Dashboard</h1>
         <div className="flex bg-stone-100 rounded-full p-1">
@@ -817,10 +817,10 @@ function DashboardScreen({ settings, records }) {
             <SectionLabel>Consistency heatmap</SectionLabel>
             <div className="overflow-x-auto -mx-5 px-5">
               <div className="inline-block min-w-full">
-                <div className="grid" style={{ gridTemplateColumns: `88px repeat(${dayData.length}, 18px)`, rowGap: "6px" }}>
+                <div className="grid" style={{ gridTemplateColumns: `92px repeat(${dayData.length}, 24px)`, rowGap: "8px" }}>
                   <div />
                   {dayData.map((d) => (
-                    <div key={d.iso} className="text-center text-[9px] text-stone-300">
+                    <div key={d.iso} className="text-center text-[10px] text-stone-300">
                       {fromISODate(d.iso).getDate()}
                     </div>
                   ))}
@@ -830,7 +830,7 @@ function DashboardScreen({ settings, records }) {
                       {dayData.map((d) => {
                         const s = d.record ? habitScore(h.key, d.record, settings) : null;
                         const color = s == null ? "bg-stone-100" : s === 100 ? "bg-emerald-500" : "bg-rose-300";
-                        return <div key={d.iso} className={`h-4 w-4 rounded-[3px] ${color} justify-self-center`} />;
+                        return <div key={d.iso} className={`h-5 w-5 rounded-[4px] ${color} justify-self-center`} />;
                       })}
                     </React.Fragment>
                   ))}
@@ -952,7 +952,7 @@ function SettingsScreen({ settings, onSave, records, onImportRecords, userEmail,
   const reset = () => setForm(DEFAULT_SETTINGS);
 
   return (
-    <div className="pb-28 px-5 pt-6">
+    <div className="pb-10 px-5 pt-6">
       <h1 className="text-xl font-semibold text-stone-900 mb-6">Settings</h1>
 
       <section className="mb-7">
@@ -1103,7 +1103,7 @@ function FieldRow({ label, children }) {
 
 function SetupNeededScreen() {
   return (
-    <div className="min-h-screen bg-[#F6F6F2] flex items-center justify-center px-6">
+    <div className="min-h-screen bg-[#E9F5EC] flex items-center justify-center px-6">
       <div className="max-w-sm text-center">
         <AlertTriangle className="mx-auto mb-4 text-amber-500" size={32} />
         <h1 className="text-lg font-semibold text-stone-900 mb-2">Backend not configured</h1>
@@ -1141,7 +1141,7 @@ function SignInScreen() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F6F6F2] flex items-center justify-center px-6">
+    <div className="min-h-screen bg-[#E9F5EC] flex items-center justify-center px-6">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <div className="mx-auto mb-4 h-12 w-12 rounded-2xl bg-stone-900 flex items-center justify-center">
@@ -1262,7 +1262,7 @@ export default function HabitTrackerApp() {
   if (!isSupabaseConfigured) return <SetupNeededScreen />;
   if (session === undefined) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F6F6F2]">
+      <div className="min-h-screen flex items-center justify-center bg-[#E9F5EC]">
         <Loader2 className="animate-spin text-stone-300" size={28} />
       </div>
     );
@@ -1271,7 +1271,7 @@ export default function HabitTrackerApp() {
 
   if (dataLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F6F6F2]">
+      <div className="min-h-screen flex items-center justify-center bg-[#E9F5EC]">
         <Loader2 className="animate-spin text-stone-300" size={28} />
       </div>
     );
@@ -1279,7 +1279,7 @@ export default function HabitTrackerApp() {
 
   if (dataError) {
     return (
-      <div className="min-h-screen bg-[#F6F6F2] flex items-center justify-center px-6">
+      <div className="min-h-screen bg-[#E9F5EC] flex items-center justify-center px-6">
         <div className="max-w-sm text-center">
           <AlertTriangle className="mx-auto mb-4 text-rose-500" size={28} />
           <p className="text-sm text-stone-600 mb-4">{dataError}</p>
@@ -1298,8 +1298,8 @@ export default function HabitTrackerApp() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#F6F6F2] flex flex-col font-sans">
-      <div className="max-w-[480px] w-full mx-auto flex-1 flex flex-col bg-[#F6F6F2] relative">
+    <div className="min-h-screen bg-[#E9F5EC] flex flex-col font-sans">
+      <div className="max-w-[480px] w-full mx-auto flex-1 flex flex-col bg-[#E9F5EC] relative">
         <div className="flex-1 overflow-y-auto">
           {tab === "today" && <DailyScreen settings={settings} records={records} onSaveRecord={handleSaveRecord} />}
           {tab === "dashboard" && <DashboardScreen settings={settings} records={records} />}
